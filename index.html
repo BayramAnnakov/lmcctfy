@@ -1,0 +1,610 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Did you ask Claude Code?</title>
+<meta name="description" content="The modern 'Did you Google it?' - for the AI age.">
+<meta property="og:title" content="Ты спросил у Claude Code?">
+<meta property="og:description" content="The modern 'Did you Google it?'">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=DM+Sans:ital,wght@0,400;0,500;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+:root {
+  --amber: #E8925B;
+  --amber-dim: #c47a4a;
+  --terminal-bg: #0d1117;
+  --terminal-border: #21262d;
+  --terminal-text: #c9d1d9;
+  --terminal-dim: #6e7681;
+  --terminal-green: #7ee787;
+  --terminal-red: #ff7b72;
+  --terminal-blue: #79c0ff;
+  --terminal-purple: #d2a8ff;
+  --landing-bg: #faf9f7;
+  --landing-text: #1a1a1a;
+  --landing-muted: #8b8685;
+  --reveal-bg: #0d1117;
+}
+
+html { font-size: 16px; }
+
+body {
+  font-family: 'DM Sans', -apple-system, sans-serif;
+  background: var(--landing-bg);
+  color: var(--landing-text);
+  min-height: 100vh;
+  overflow-x: hidden;
+  transition: background 0.8s ease;
+}
+
+body.dark-mode {
+  background: var(--reveal-bg);
+}
+
+.landing {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 2rem;
+  transition: opacity 0.6s ease, transform 0.6s ease;
+}
+
+.landing.hidden {
+  opacity: 0;
+  transform: translateY(-30px);
+  pointer-events: none;
+  position: absolute;
+}
+
+.landing-logo {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.85rem;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  color: var(--amber);
+  margin-bottom: 2.5rem;
+  text-transform: uppercase;
+}
+
+.landing-logo::before {
+  content: '>';
+  margin-right: 0.4em;
+  opacity: 0.5;
+}
+
+.landing h1 {
+  font-family: 'DM Sans', sans-serif;
+  font-size: clamp(2rem, 6vw, 3.8rem);
+  font-weight: 700;
+  line-height: 1.1;
+  text-align: center;
+  margin-bottom: 0.6rem;
+  letter-spacing: -0.03em;
+}
+
+.landing .tagline {
+  font-size: 1.1rem;
+  color: var(--landing-muted);
+  margin-bottom: 3rem;
+  font-style: italic;
+}
+
+.input-group {
+  display: flex;
+  gap: 0;
+  width: 100%;
+  max-width: 560px;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow:
+    0 1px 3px rgba(0,0,0,0.06),
+    0 8px 24px rgba(0,0,0,0.06),
+    0 0 0 1px rgba(0,0,0,0.06);
+  transition: box-shadow 0.3s ease, transform 0.2s ease;
+}
+
+.input-group:focus-within {
+  box-shadow:
+    0 1px 3px rgba(0,0,0,0.08),
+    0 12px 32px rgba(0,0,0,0.1),
+    0 0 0 2px var(--amber);
+  transform: translateY(-1px);
+}
+
+.input-group input {
+  flex: 1;
+  padding: 1rem 1.25rem;
+  border: none;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 1.05rem;
+  background: white;
+  color: var(--landing-text);
+  outline: none;
+  min-width: 0;
+}
+
+.input-group input::placeholder { color: #b5b0ae; }
+
+.input-group button {
+  padding: 1rem 1.5rem;
+  border: none;
+  background: var(--amber);
+  color: white;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.2s ease;
+  letter-spacing: 0.02em;
+}
+
+.input-group button:hover { background: var(--amber-dim); }
+
+.footer-note {
+  margin-top: 3rem;
+  font-size: 0.8rem;
+  color: var(--landing-muted);
+  text-align: center;
+  line-height: 1.6;
+}
+
+.footer-note a {
+  color: var(--amber);
+  text-decoration: none;
+}
+
+.terminal-scene {
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 1.5rem;
+}
+
+.terminal-scene.active {
+  display: flex;
+  animation: fadeInUp 0.6s ease forwards;
+}
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(40px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.terminal-window {
+  width: 100%;
+  max-width: 720px;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow:
+    0 4px 6px rgba(0,0,0,0.3),
+    0 20px 60px rgba(0,0,0,0.5),
+    0 0 0 1px rgba(255,255,255,0.05);
+}
+
+.terminal-titlebar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  background: #161b22;
+  border-bottom: 1px solid var(--terminal-border);
+}
+
+.terminal-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+}
+
+.terminal-dot.red { background: #ff5f57; }
+.terminal-dot.yellow { background: #febc2e; }
+.terminal-dot.green { background: #28c840; }
+
+.terminal-title {
+  flex: 1;
+  text-align: center;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.8rem;
+  color: var(--terminal-dim);
+  margin-right: 44px;
+}
+
+.terminal-body {
+  background: var(--terminal-bg);
+  padding: 20px 20px 24px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.85rem;
+  line-height: 1.7;
+  min-height: 280px;
+  color: var(--terminal-text);
+}
+
+.terminal-line {
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.cursor-block {
+  display: inline-block;
+  width: 0.55em;
+  height: 1.15em;
+  background: var(--amber);
+  vertical-align: text-bottom;
+  animation: blink 1s step-end infinite;
+  margin-left: 1px;
+}
+
+@keyframes blink { 50% { opacity: 0; } }
+
+.spinner-dots { display: inline; color: var(--terminal-dim); }
+.spinner-dots::after {
+  content: '\2819';
+  animation: spin-braille 0.8s steps(1) infinite;
+}
+
+@keyframes spin-braille {
+  0%   { content: '\280B'; }
+  12%  { content: '\2819'; }
+  25%  { content: '\2839'; }
+  37%  { content: '\2838'; }
+  50%  { content: '\283C'; }
+  62%  { content: '\2834'; }
+  75%  { content: '\2826'; }
+  87%  { content: '\2827'; }
+}
+
+.reveal-message {
+  text-align: center;
+  margin-top: 2.5rem;
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity 0.8s ease, transform 0.8s ease;
+}
+
+.reveal-message.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.reveal-ru {
+  font-family: 'DM Sans', sans-serif;
+  font-size: clamp(1.6rem, 4.5vw, 2.8rem);
+  font-weight: 700;
+  color: white;
+  letter-spacing: -0.02em;
+  margin-bottom: 0.3rem;
+}
+
+.reveal-en {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 1rem;
+  color: var(--terminal-dim);
+  font-style: italic;
+}
+
+.reveal-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  margin-top: 2rem;
+  flex-wrap: wrap;
+}
+
+.btn-copy, .btn-again {
+  padding: 0.65rem 1.3rem;
+  border-radius: 8px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: none;
+}
+
+.btn-copy { background: var(--amber); color: white; }
+.btn-copy:hover { background: var(--amber-dim); transform: translateY(-1px); }
+.btn-copy.copied { background: var(--terminal-green); color: var(--terminal-bg); }
+.btn-again {
+  background: rgba(255,255,255,0.08);
+  color: var(--terminal-dim);
+  border: 1px solid var(--terminal-border);
+}
+.btn-again:hover {
+  background: rgba(255,255,255,0.12);
+  color: var(--terminal-text);
+}
+
+@media (max-width: 600px) {
+  .terminal-body { font-size: 0.75rem; padding: 14px; }
+  .input-group { flex-direction: column; border-radius: 10px; }
+  .input-group button { border-radius: 0; }
+  .landing { padding: 1.5rem; }
+  .reveal-actions { flex-direction: column; align-items: center; }
+}
+</style>
+</head>
+<body>
+
+<div class="landing" id="landing">
+  <div class="landing-logo">lmcctfy</div>
+  <h1>Ты спросил<br>у Claude Code?</h1>
+  <p class="tagline">The modern "Did you Google it?"</p>
+  <div class="input-group">
+    <input type="text" id="questionInput" placeholder="Type their question here..." autofocus>
+    <button id="askBtn">Ask Claude Code</button>
+  </div>
+  <p class="footer-note">
+    Type someone's question. Get a shareable link.<br>
+    Send it instead of answering. <a href="https://t.me/ProductsAndStartups" target="_blank">@ProductsAndStartups</a>
+  </p>
+</div>
+
+<div class="terminal-scene" id="terminalScene">
+  <div class="terminal-window">
+    <div class="terminal-titlebar">
+      <div class="terminal-dot red"></div>
+      <div class="terminal-dot yellow"></div>
+      <div class="terminal-dot green"></div>
+      <div class="terminal-title">Terminal - claude</div>
+    </div>
+    <div class="terminal-body" id="terminalBody"></div>
+  </div>
+  <div class="reveal-message" id="revealMessage">
+    <div class="reveal-ru">Ты спросил у Claude Code?</div>
+    <div class="reveal-en">Did you ask Claude Code?</div>
+    <div class="reveal-actions">
+      <button class="btn-copy" id="btnCopy">Copy link</button>
+      <button class="btn-again" id="btnAgain">Ask another</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function() {
+  'use strict';
+
+  const landing = document.getElementById('landing');
+  const terminalScene = document.getElementById('terminalScene');
+  const terminalBody = document.getElementById('terminalBody');
+  const revealMessage = document.getElementById('revealMessage');
+  const questionInput = document.getElementById('questionInput');
+  const askBtn = document.getElementById('askBtn');
+  const btnCopy = document.getElementById('btnCopy');
+  const btnAgain = document.getElementById('btnAgain');
+
+  function escapeText(str) {
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.textContent;
+  }
+
+  function sleep(ms) {
+    return new Promise(function(r) { setTimeout(r, ms); });
+  }
+
+  function addLine(parent) {
+    var div = document.createElement('div');
+    div.className = 'terminal-line';
+    parent.appendChild(div);
+    parent.scrollTop = parent.scrollHeight;
+    return div;
+  }
+
+  function setLineContent(el, content) {
+    el.textContent = '';
+    var temp = document.createElement('div');
+    temp.textContent = content;
+    el.textContent = temp.textContent;
+  }
+
+  async function typeChars(parentEl, text, delay, className) {
+    var cursor = document.createElement('span');
+    cursor.className = 'cursor-block';
+    parentEl.appendChild(cursor);
+
+    var span = document.createElement('span');
+    if (className) span.className = className;
+    parentEl.insertBefore(span, cursor);
+
+    for (var i = 0; i < text.length; i++) {
+      span.textContent += text[i];
+      terminalBody.scrollTop = terminalBody.scrollHeight;
+      await sleep(delay + Math.random() * 30);
+    }
+    cursor.remove();
+  }
+
+  async function runTerminalSequence(question) {
+    terminalBody.textContent = '';
+    var safeQuestion = escapeText(question);
+
+    // Line 1: shell prompt + claude command
+    var line1 = addLine(terminalBody);
+    var pathSpan = document.createElement('span');
+    pathSpan.style.color = 'var(--terminal-blue)';
+    pathSpan.textContent = '~/project';
+    line1.appendChild(pathSpan);
+
+    var dollarSpan = document.createElement('span');
+    dollarSpan.style.color = 'var(--terminal-dim)';
+    dollarSpan.textContent = ' $ ';
+    line1.appendChild(dollarSpan);
+
+    await sleep(200);
+    await typeChars(line1, 'claude', 45, 'command');
+    await sleep(600);
+
+    // Blank line
+    addLine(terminalBody);
+    await sleep(300);
+
+    // Banner
+    var b1 = addLine(terminalBody);
+    b1.style.color = 'var(--terminal-dim)';
+    b1.textContent = String.fromCharCode(9581) + String.fromCharCode(9472).repeat(38) + String.fromCharCode(9582);
+    await sleep(80);
+
+    var b2 = addLine(terminalBody);
+    var b2pipe1 = document.createElement('span');
+    b2pipe1.style.color = 'var(--terminal-dim)';
+    b2pipe1.textContent = String.fromCharCode(9474) + '  ';
+    b2.appendChild(b2pipe1);
+
+    var b2title = document.createElement('span');
+    b2title.style.color = 'var(--amber)';
+    b2title.style.fontWeight = '700';
+    b2title.style.fontSize = '1.05em';
+    b2title.textContent = 'Claude Code';
+    b2.appendChild(b2title);
+
+    var b2ver = document.createElement('span');
+    b2ver.style.color = 'var(--terminal-dim)';
+    b2ver.textContent = ' v2.1                ' + String.fromCharCode(9474);
+    b2.appendChild(b2ver);
+    await sleep(80);
+
+    var b3 = addLine(terminalBody);
+    b3.style.color = 'var(--terminal-dim)';
+    b3.textContent = String.fromCharCode(9584) + String.fromCharCode(9472).repeat(38) + String.fromCharCode(9583);
+    await sleep(500);
+
+    addLine(terminalBody);
+
+    // User prompt with question
+    var line4 = addLine(terminalBody);
+    var promptSpan = document.createElement('span');
+    promptSpan.style.color = 'var(--amber)';
+    promptSpan.style.fontWeight = '700';
+    promptSpan.textContent = String.fromCharCode(10095) + ' ';
+    line4.appendChild(promptSpan);
+    await typeChars(line4, safeQuestion, 35);
+    await sleep(400);
+
+    addLine(terminalBody);
+
+    // Thinking spinner
+    var thinkLine = addLine(terminalBody);
+    var spinSpan = document.createElement('span');
+    spinSpan.className = 'spinner-dots';
+    thinkLine.appendChild(spinSpan);
+
+    var thinkText = document.createElement('span');
+    thinkText.style.color = 'var(--terminal-dim)';
+    thinkText.textContent = ' Thinking...';
+    thinkLine.appendChild(thinkText);
+    await sleep(2200);
+
+    // Remove spinner, show response
+    thinkLine.remove();
+
+    var resp1 = addLine(terminalBody);
+    var greenSpan = document.createElement('span');
+    greenSpan.style.color = 'var(--terminal-green)';
+    greenSpan.textContent = 'I can help with that.';
+    resp1.appendChild(greenSpan);
+    await sleep(400);
+
+    addLine(terminalBody);
+
+    var resp2 = addLine(terminalBody);
+    await typeChars(resp2, 'Here\'s what you need to know:', 30);
+    resp2.firstElementChild.style.color = 'var(--terminal-green)';
+    await sleep(300);
+
+    var resp3 = addLine(terminalBody);
+    var dimResp = document.createElement('span');
+    dimResp.style.color = 'var(--terminal-dim)';
+    dimResp.textContent = '[ ... generating response ... ]';
+    resp3.appendChild(dimResp);
+    await sleep(1500);
+
+    // Clear and show punchline
+    resp3.remove();
+    resp2.remove();
+    resp1.remove();
+
+    var punchLine = addLine(terminalBody);
+    var punchSpan = document.createElement('span');
+    punchSpan.style.color = 'var(--amber)';
+    punchSpan.style.fontSize = '1.1em';
+    punchSpan.style.fontWeight = '700';
+    punchSpan.textContent = 'See? You could have just asked.';
+    punchLine.appendChild(punchSpan);
+
+    await sleep(600);
+
+    // Show reveal
+    revealMessage.classList.add('visible');
+  }
+
+  function startAnimation() {
+    var q = questionInput.value.trim();
+    if (!q) { questionInput.focus(); return; }
+
+    // Update URL
+    var url = new URL(window.location);
+    url.searchParams.set('q', q);
+    window.history.replaceState({}, '', url);
+
+    // Transition
+    document.body.classList.add('dark-mode');
+    landing.classList.add('hidden');
+
+    setTimeout(function() {
+      terminalScene.classList.add('active');
+      runTerminalSequence(q);
+    }, 500);
+  }
+
+  function copyLink() {
+    var url = window.location.href;
+    navigator.clipboard.writeText(url).then(function() {
+      btnCopy.textContent = 'Copied!';
+      btnCopy.classList.add('copied');
+      setTimeout(function() {
+        btnCopy.textContent = 'Copy link';
+        btnCopy.classList.remove('copied');
+      }, 2000);
+    });
+  }
+
+  function resetPage() {
+    document.body.classList.remove('dark-mode');
+    terminalScene.classList.remove('active');
+    revealMessage.classList.remove('visible');
+    terminalBody.textContent = '';
+    landing.classList.remove('hidden');
+    questionInput.value = '';
+    questionInput.focus();
+    var url = new URL(window.location);
+    url.searchParams.delete('q');
+    window.history.replaceState({}, '', url);
+  }
+
+  // Events
+  askBtn.addEventListener('click', startAnimation);
+  btnCopy.addEventListener('click', copyLink);
+  btnAgain.addEventListener('click', resetPage);
+  questionInput.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') startAnimation();
+  });
+
+  // Auto-play if ?q= present
+  var params = new URLSearchParams(window.location.search);
+  var qParam = params.get('q');
+  if (qParam) {
+    questionInput.value = qParam;
+    startAnimation();
+  }
+})();
+</script>
+</body>
+</html>

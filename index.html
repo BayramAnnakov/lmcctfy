@@ -335,13 +335,13 @@ body.dark-mode {
 
 <div class="landing" id="landing">
   <div class="landing-logo">lmcctfy</div>
-  <h1>Ты спросил<br>у Claude Code?</h1>
-  <p class="tagline">The modern "Did you Google it?"</p>
+  <h1 id="landingTitle">Did you ask<br>Claude Code?</h1>
+  <p class="tagline" id="landingTagline">The modern "Did you Google it?"</p>
   <div class="input-group">
     <input type="text" id="questionInput" placeholder="Type their question here..." autofocus>
     <button id="askBtn">Ask Claude Code</button>
   </div>
-  <p class="footer-note">
+  <p class="footer-note" id="landingFooter">
     Type someone's question. Get a shareable link.<br>
     Send it instead of answering. <a href="https://t.me/ProductsAndStartups" target="_blank">@ProductsAndStartups</a>
   </p>
@@ -358,8 +358,8 @@ body.dark-mode {
     <div class="terminal-body" id="terminalBody"></div>
   </div>
   <div class="reveal-message" id="revealMessage">
-    <div class="reveal-ru">Ты спросил у Claude Code?</div>
-    <div class="reveal-en">Did you ask Claude Code?</div>
+    <div class="reveal-ru" id="revealMain">Did you ask Claude Code?</div>
+    <div class="reveal-en" id="revealSub">Спроси у Claude Code</div>
     <div class="reveal-actions">
       <button class="btn-copy" id="btnCopy">Copy link</button>
       <button class="btn-again" id="btnAgain">Ask another</button>
@@ -371,14 +371,74 @@ body.dark-mode {
 (function() {
   'use strict';
 
-  const landing = document.getElementById('landing');
-  const terminalScene = document.getElementById('terminalScene');
-  const terminalBody = document.getElementById('terminalBody');
-  const revealMessage = document.getElementById('revealMessage');
-  const questionInput = document.getElementById('questionInput');
-  const askBtn = document.getElementById('askBtn');
-  const btnCopy = document.getElementById('btnCopy');
-  const btnAgain = document.getElementById('btnAgain');
+  // ── i18n: auto-detect Russian browser ──
+  var isRu = /^ru\b/i.test(navigator.language || '');
+  var i18n = isRu ? {
+    title: ['Спроси', 'у Claude Code'],
+    tagline: 'Современная версия "погугли"',
+    placeholder: 'Напиши сюда их вопрос...',
+    askBtn: 'Спросить Claude Code',
+    footerLine1: 'Напиши чужой вопрос. Получи ссылку.',
+    footerLine2: 'Отправь вместо ответа. ',
+    revealMain: 'Спроси у Claude Code',
+    revealSub: 'Did you ask Claude Code?',
+    copyBtn: 'Скопировать ссылку',
+    copiedBtn: 'Скопировано!',
+    againBtn: 'Ещё вопрос',
+    punchline: 'Видишь? Можно было просто спросить.',
+    thinking: ' Думаю...',
+  } : {
+    title: ['Did you ask', 'Claude Code?'],
+    tagline: 'The modern "Did you Google it?"',
+    placeholder: 'Type their question here...',
+    askBtn: 'Ask Claude Code',
+    footerLine1: 'Type someone\'s question. Get a shareable link.',
+    footerLine2: 'Send it instead of answering. ',
+    revealMain: 'Did you ask Claude Code?',
+    revealSub: 'Спроси у Claude Code',
+    copyBtn: 'Copy link',
+    copiedBtn: 'Copied!',
+    againBtn: 'Ask another',
+    punchline: 'See? You could have just asked.',
+    thinking: ' Thinking...',
+  };
+
+  // Apply i18n to static elements
+  var titleEl = document.getElementById('landingTitle');
+  titleEl.textContent = '';
+  titleEl.appendChild(document.createTextNode(i18n.title[0]));
+  titleEl.appendChild(document.createElement('br'));
+  titleEl.appendChild(document.createTextNode(i18n.title[1]));
+
+  document.getElementById('landingTagline').textContent = i18n.tagline;
+  document.getElementById('questionInput').placeholder = i18n.placeholder;
+  document.getElementById('askBtn').textContent = i18n.askBtn;
+
+  var footerEl = document.getElementById('landingFooter');
+  footerEl.textContent = '';
+  footerEl.appendChild(document.createTextNode(i18n.footerLine1));
+  footerEl.appendChild(document.createElement('br'));
+  footerEl.appendChild(document.createTextNode(i18n.footerLine2));
+  var footerLink = document.createElement('a');
+  footerLink.href = 'https://t.me/ProductsAndStartups';
+  footerLink.target = '_blank';
+  footerLink.textContent = '@ProductsAndStartups';
+  footerEl.appendChild(footerLink);
+
+  document.getElementById('revealMain').textContent = i18n.revealMain;
+  document.getElementById('revealSub').textContent = i18n.revealSub;
+  document.getElementById('btnCopy').textContent = i18n.copyBtn;
+  document.getElementById('btnAgain').textContent = i18n.againBtn;
+
+  // ── DOM refs ──
+  var landing = document.getElementById('landing');
+  var terminalScene = document.getElementById('terminalScene');
+  var terminalBody = document.getElementById('terminalBody');
+  var revealMessage = document.getElementById('revealMessage');
+  var questionInput = document.getElementById('questionInput');
+  var askBtn = document.getElementById('askBtn');
+  var btnCopy = document.getElementById('btnCopy');
+  var btnAgain = document.getElementById('btnAgain');
 
   function escapeText(str) {
     const div = document.createElement('div');
@@ -498,7 +558,7 @@ body.dark-mode {
 
     var thinkText = document.createElement('span');
     thinkText.style.color = 'var(--terminal-dim)';
-    thinkText.textContent = ' Thinking...';
+    thinkText.textContent = i18n.thinking;
     thinkLine.appendChild(thinkText);
     await sleep(2200);
 
@@ -536,7 +596,7 @@ body.dark-mode {
     punchSpan.style.color = 'var(--amber)';
     punchSpan.style.fontSize = '1.1em';
     punchSpan.style.fontWeight = '700';
-    punchSpan.textContent = 'See? You could have just asked.';
+    punchSpan.textContent = i18n.punchline;
     punchLine.appendChild(punchSpan);
 
     await sleep(600);
@@ -567,10 +627,10 @@ body.dark-mode {
   function copyLink() {
     var url = window.location.href;
     navigator.clipboard.writeText(url).then(function() {
-      btnCopy.textContent = 'Copied!';
+      btnCopy.textContent = i18n.copiedBtn;
       btnCopy.classList.add('copied');
       setTimeout(function() {
-        btnCopy.textContent = 'Copy link';
+        btnCopy.textContent = i18n.copyBtn;
         btnCopy.classList.remove('copied');
       }, 2000);
     });
